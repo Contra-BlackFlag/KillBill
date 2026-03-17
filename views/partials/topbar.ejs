@@ -1,0 +1,55 @@
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="icon-btn" id="menu-toggle" onclick="toggleSidebar()" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <h1 class="topbar-title"><%= title ? title.split('—')[0].trim() : 'ShopSathi' %></h1>
+  </div>
+  <div class="topbar-right">
+    <!-- Notification Bell -->
+    <div class="notif-wrap">
+      <button class="icon-btn" id="notif-btn" onclick="toggleNotifPanel()" aria-label="Notifications">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-dot" id="notif-dot" style="display:none"></span>
+      </button>
+      <div class="notif-panel" id="notif-panel" style="display:none">
+        <div class="notif-panel-head">
+          <span>Notifications</span>
+          <button class="btn-link" onclick="markAllRead()">Mark all read</button>
+        </div>
+        <div id="notif-list"><div class="notif-empty">Loading...</div></div>
+      </div>
+    </div>
+    <!-- User -->
+    <div class="topbar-user">
+      <div class="topbar-avatar"><%= (profile.shop_name || 'S').charAt(0).toUpperCase() %></div>
+      <span class="topbar-username"><%= profile.owner_name || user.email.split('@')[0] %></span>
+    </div>
+  </div>
+</header>
+
+<!-- Flash Messages -->
+<% if (success && success.length) { %>
+  <% success.forEach(msg => { %>
+    <div class="flash flash--success" onclick="this.remove()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      <%= msg %>
+    </div>
+  <% }); %>
+<% } %>
+<% if (error && error.length) { %>
+  <% error.forEach(msg => { %>
+    <div class="flash flash--error" onclick="this.remove()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <%= msg %>
+    </div>
+  <% }); %>
+<% } %>
+<% if (info && info.length) { %>
+  <% info.forEach(msg => { %>
+    <div class="flash flash--info" onclick="this.remove()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <%= msg %>
+    </div>
+  <% }); %>
+<% } %>

@@ -1,0 +1,74 @@
+<%- include('../partials/head') %>
+<div class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <div>
+        <div class="auth-logo-title">ShopSathi</div>
+        <div class="auth-logo-sub">Smart Shop Manager</div>
+      </div>
+    </div>
+
+    <% if (error && error.length) { %>
+      <div class="flash flash--error" style="margin-bottom:16px" onclick="this.remove()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <%= error[0] %>
+      </div>
+    <% } %>
+    <% if (info && info.length) { %>
+      <div class="flash flash--info" style="margin-bottom:16px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg>
+        <%= info[0] %>
+      </div>
+    <% } %>
+
+    <!-- Tabs -->
+    <div class="auth-tabs">
+      <a href="/auth/login" class="auth-tab <%= tab === 'login' ? 'active' : '' %>">Sign In</a>
+      <a href="/auth/register" class="auth-tab <%= tab === 'register' ? 'active' : '' %>">Register</a>
+    </div>
+
+    <!-- Login Form -->
+    <% if (tab === 'login') { %>
+    <form action="/auth/login" method="POST" class="auth-form">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" name="email" placeholder="owner@yourshop.com" required autofocus />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" name="password" placeholder="••••••••" required />
+      </div>
+      <button type="submit" class="btn-primary-full">Sign In</button>
+    </form>
+    <% } %>
+
+    <!-- Register Form -->
+    <% if (tab === 'register') { %>
+    <form action="/auth/register" method="POST" class="auth-form">
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Shop Name <span style="color:var(--accent)">*</span></label>
+          <input class="form-input" type="text" name="shop_name" placeholder="ABC Kirana" required autofocus />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Owner Name</label>
+          <input class="form-input" type="text" name="owner_name" placeholder="Ramesh Patil" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email <span style="color:var(--accent)">*</span></label>
+        <input class="form-input" type="email" name="email" placeholder="owner@yourshop.com" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password <span style="color:var(--accent)">*</span></label>
+        <input class="form-input" type="password" name="password" placeholder="Min 6 characters" minlength="6" required />
+      </div>
+      <button type="submit" class="btn-primary-full">Create Account</button>
+    </form>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/footer') %>

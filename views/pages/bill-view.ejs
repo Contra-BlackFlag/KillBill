@@ -1,0 +1,122 @@
+<%- include('../partials/head') %>
+<div class="layout">
+  <%- include('../partials/sidebar') %>
+  <div class="main">
+    <%- include('../partials/topbar') %>
+    <div class="content">
+
+      <div style="max-width:640px;margin:0 auto">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Bill #<%= bill.bill_number %></div>
+            <div class="page-sub"><%= new Date(bill.created_at).toLocaleString('en-IN') %></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <a href="/billing" class="btn btn-ghost">← New Bill</a>
+            <button onclick="window.print()" class="btn btn-accent">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Print
+            </button>
+          </div>
+        </div>
+
+        <div class="card" id="printable-bill">
+          <!-- Shop Header -->
+          <div style="text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+            <div style="font-family:var(--font-head);font-size:22px;font-weight:800"><%= profile.shop_name || 'My Shop' %></div>
+            <% if (profile.address) { %><div style="font-size:12px;color:var(--text2);margin-top:3px"><%= profile.address %></div><% } %>
+            <% if (profile.phone) { %><div style="font-size:12px;color:var(--text2)">📞 <%= profile.phone %></div><% } %>
+            <% if (profile.gst_number) { %><div style="font-size:12px;color:var(--text3)">GSTIN: <%= profile.gst_number %></div><% } %>
+          </div>
+
+          <!-- Bill Meta -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;font-size:13px">
+            <div>
+              <div class="text-dim text-xs">BILL NUMBER</div>
+              <div class="fw-bold"><%= bill.bill_number %></div>
+            </div>
+            <div>
+              <div class="text-dim text-xs">DATE & TIME</div>
+              <div><%= new Date(bill.created_at).toLocaleString('en-IN') %></div>
+            </div>
+            <div>
+              <div class="text-dim text-xs">CUSTOMER</div>
+              <div class="fw-bold"><%= bill.customer_name || 'Walk-in' %></div>
+              <% if (bill.customers?.phone) { %><div class="text-dim text-xs"><%= bill.customers.phone %></div><% } %>
+            </div>
+            <div>
+              <div class="text-dim text-xs">PAYMENT MODE</div>
+              <span class="badge badge--<%= bill.payment_mode === 'credit' ? 'red' : 'green' %>">
+                <%= bill.payment_mode.toUpperCase() %>
+              </span>
+            </div>
+          </div>
+
+          <!-- Items -->
+          <div class="table-wrap" style="margin-bottom:16px">
+            <table class="data-table">
+              <thead><tr><th>#</th><th>Item</th><th>Rate</th><th>Qty</th><th>GST</th><th style="text-align:right">Amount</th></tr></thead>
+              <tbody>
+                <% bill.bill_items.forEach((item, idx) => { %>
+                <tr>
+                  <td class="text-dim"><%= idx + 1 %></td>
+                  <td><strong><%= item.product_name %></strong></td>
+                  <td>₹<%= parseFloat(item.unit_price).toFixed(2) %></td>
+                  <td><%= item.quantity %></td>
+                  <td class="text-dim"><%= item.gst_rate || 0 %>%</td>
+                  <td style="text-align:right" class="fw-bold">₹<%= parseFloat(item.total).toFixed(2) %></td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Totals -->
+          <div style="max-width:260px;margin-left:auto;font-size:13px">
+            <div class="summary-line"><span class="text-muted">Subtotal</span><span>₹<%= parseFloat(bill.subtotal).toFixed(2) %></span></div>
+            <% if (parseFloat(bill.gst_amount) > 0) { %>
+            <div class="summary-line"><span class="text-muted">GST</span><span>₹<%= parseFloat(bill.gst_amount).toFixed(2) %></span></div>
+            <% } %>
+            <% if (parseFloat(bill.discount) > 0) { %>
+            <div class="summary-line"><span class="text-muted">Discount</span><span style="color:var(--red)">-₹<%= parseFloat(bill.discount).toFixed(2) %></span></div>
+            <% } %>
+            <div class="divider" style="margin:8px 0"></div>
+            <div class="summary-line summary-line--total">
+              <span>TOTAL</span>
+              <span style="color:var(--accent);font-size:18px">₹<%= parseFloat(bill.total).toFixed(2) %></span>
+            </div>
+            <% if (bill.payment_status === 'pending') { %>
+            <div style="margin-top:10px;padding:10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:8px;text-align:center;font-weight:700;color:var(--red)">
+              PAYMENT PENDING
+            </div>
+            <% } %>
+          </div>
+
+          <% if (bill.notes) { %>
+          <div style="margin-top:16px;padding:12px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--text2)">
+            <strong>Note:</strong> <%= bill.notes %>
+          </div>
+          <% } %>
+
+          <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--text3)">
+            Thank you for shopping with us! 🙏<br>
+            <% if (profile.phone) { %>Contact: <%= profile.phone %><% } %>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@media print {
+  .sidebar, .topbar, .flash, .page-header .btn, .page-header .btn-ghost { display:none !important; }
+  .main { margin-left: 0 !important; }
+  .content { padding: 0 !important; }
+  #printable-bill { border: none !important; box-shadow: none !important; background: white !important; color: black !important; }
+  #printable-bill * { color: black !important; background: transparent !important; }
+  .badge { border: 1px solid #ccc !important; }
+}
+</style>
+<%- include('../partials/footer') %>

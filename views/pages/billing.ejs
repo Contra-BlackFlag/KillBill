@@ -1,0 +1,212 @@
+<%- include('../partials/head') %>
+<div class="layout">
+  <%- include('../partials/sidebar') %>
+  <div class="main">
+    <%- include('../partials/topbar') %>
+    <div class="content">
+
+      <div class="billing-grid">
+        <!-- LEFT: Product search + cart -->
+        <div class="billing-left">
+          <div class="card mb-16">
+            <div class="card-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Add Products
+            </div>
+            <input class="form-input" id="product-search" placeholder="Search product by name or scan barcode..." autocomplete="off" />
+            <div id="product-results" class="product-grid mt-12"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              Bill Items
+            </div>
+            <div id="bill-items-container">
+              <div class="empty-state" id="bill-empty">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                <p>No items added yet</p>
+                <small>Search and click a product to add it</small>
+              </div>
+              <div class="table-wrap" id="bill-table-wrap" style="display:none">
+                <table class="data-table" id="bill-table">
+                  <thead>
+                    <tr><th>Product</th><th>Rate (₹)</th><th>Qty</th><th>GST%</th><th>Total</th><th></th></tr>
+                  </thead>
+                  <tbody id="bill-items-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Summary + submit -->
+        <div class="billing-right">
+          <form action="/billing" method="POST" id="billing-form">
+            <input type="hidden" name="items" id="items-json" value="[]" />
+            <div class="card">
+              <div class="card-title">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Bill Summary
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Customer (optional)</label>
+                <select class="form-select" name="customer_id">
+                  <option value="">Walk-in Customer</option>
+                  <% customers.forEach(c => { %>
+                    <option value="<%= c.id %>"><%= c.name %><%= c.phone ? ` (${c.phone})` : '' %><%= c.total_credit > 0 ? ` — ₹${parseFloat(c.total_credit).toFixed(0)} due` : '' %></option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Payment Mode</label>
+                <select class="form-select" name="payment_mode" id="payment-mode">
+                  <option value="cash">💵 Cash</option>
+                  <option value="upi">📱 UPI</option>
+                  <option value="card">💳 Card</option>
+                  <option value="credit">📒 Credit (Udhar)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Discount (₹)</label>
+                <input class="form-input" type="number" name="discount" id="discount" value="0" min="0" oninput="updateSummary()" />
+              </div>
+
+              <div class="divider"></div>
+
+              <div class="bill-summary-lines">
+                <div class="summary-line"><span class="text-muted">Subtotal</span><span id="sum-subtotal">₹0</span></div>
+                <div class="summary-line"><span class="text-muted">GST</span><span id="sum-gst">₹0</span></div>
+                <div class="summary-line"><span class="text-muted">Discount</span><span id="sum-discount" style="color:var(--red)">-₹0</span></div>
+                <div class="divider" style="margin:8px 0"></div>
+                <div class="summary-line summary-line--total">
+                  <span>Total</span>
+                  <span id="sum-total" style="color:var(--accent)">₹0</span>
+                </div>
+              </div>
+
+              <div class="form-group mt-12">
+                <label class="form-label">Notes</label>
+                <textarea class="form-textarea" name="notes" rows="2" placeholder="Optional..."></textarea>
+              </div>
+
+              <button type="submit" class="btn-primary-full" id="create-bill-btn" disabled>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Create Bill
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const ALL_PRODUCTS = <%- JSON.stringify(products) %>;
+let billItems = [];
+
+// Search products
+document.getElementById('product-search').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  const filtered = ALL_PRODUCTS.filter(p =>
+    p.name.toLowerCase().includes(q) || (p.barcode || '').includes(q)
+  ).slice(0, 24);
+  renderProductGrid(filtered);
+});
+
+function renderProductGrid(list) {
+  const el = document.getElementById('product-results');
+  if (!list.length) {
+    el.innerHTML = '<p class="text-dim text-sm" style="padding:8px 0">No products found</p>';
+    return;
+  }
+  el.innerHTML = list.map(p => `
+    <div class="product-card" onclick="addItem('${p.id}')">
+      <div class="product-card-name">${p.name}</div>
+      <div class="product-card-cat">${p.category || ''}</div>
+      <div class="product-card-footer">
+        <span class="product-card-price">₹${parseFloat(p.selling_price).toFixed(2)}</span>
+        <span class="badge badge--${p.quantity <= 5 ? 'red' : 'gray'}">${p.quantity} ${p.unit || 'pcs'}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addItem(productId) {
+  const p = ALL_PRODUCTS.find(x => x.id === productId);
+  if (!p) return;
+  const ex = billItems.find(i => i.product_id === productId);
+  if (ex) {
+    if (ex.quantity >= p.quantity) { alert(`Only ${p.quantity} in stock.`); return; }
+    ex.quantity++;
+  } else {
+    billItems.push({
+      product_id: p.id, product_name: p.name,
+      quantity: 1, unit_price: parseFloat(p.selling_price),
+      gst_rate: parseFloat(p.gst_rate || 0), max: p.quantity
+    });
+  }
+  renderBillTable();
+  updateSummary();
+}
+
+function renderBillTable() {
+  const tbody = document.getElementById('bill-items-body');
+  document.getElementById('bill-empty').style.display = billItems.length ? 'none' : '';
+  document.getElementById('bill-table-wrap').style.display = billItems.length ? '' : 'none';
+  document.getElementById('create-bill-btn').disabled = billItems.length === 0;
+
+  tbody.innerHTML = billItems.map((item, i) => `
+    <tr>
+      <td><strong>${item.product_name}</strong></td>
+      <td><input class="table-input" type="number" min="0" value="${item.unit_price}" style="width:80px" onchange="updateItem(${i},'price',this.value)" /></td>
+      <td><input class="table-input" type="number" min="1" max="${item.max}" value="${item.quantity}" style="width:60px" onchange="updateItem(${i},'qty',this.value)" /></td>
+      <td class="text-dim">${item.gst_rate}%</td>
+      <td class="fw-bold">₹${lineTotal(item).toFixed(2)}</td>
+      <td><button type="button" class="btn btn-sm btn-danger" onclick="removeItem(${i})">✕</button></td>
+    </tr>
+  `).join('');
+}
+
+function lineTotal(item) {
+  return item.unit_price * item.quantity * (1 + item.gst_rate / 100);
+}
+
+function updateItem(i, field, val) {
+  if (field === 'qty') billItems[i].quantity = Math.min(parseInt(val) || 1, billItems[i].max);
+  if (field === 'price') billItems[i].unit_price = parseFloat(val) || 0;
+  renderBillTable();
+  updateSummary();
+}
+
+function removeItem(i) {
+  billItems.splice(i, 1);
+  renderBillTable();
+  updateSummary();
+}
+
+function updateSummary() {
+  const subtotal = billItems.reduce((s, i) => s + i.unit_price * i.quantity, 0);
+  const gst      = billItems.reduce((s, i) => s + i.unit_price * i.quantity * (i.gst_rate / 100), 0);
+  const disc     = parseFloat(document.getElementById('discount').value) || 0;
+  const total    = Math.max(0, subtotal + gst - disc);
+  document.getElementById('sum-subtotal').textContent = '₹' + subtotal.toFixed(2);
+  document.getElementById('sum-gst').textContent = '₹' + gst.toFixed(2);
+  document.getElementById('sum-discount').textContent = '-₹' + disc.toFixed(2);
+  document.getElementById('sum-total').textContent = '₹' + total.toFixed(2);
+}
+
+document.getElementById('billing-form').addEventListener('submit', function(e) {
+  if (!billItems.length) { e.preventDefault(); alert('Add at least one item.'); return; }
+  document.getElementById('items-json').value = JSON.stringify(billItems);
+});
+
+// Show all products on load
+renderProductGrid(ALL_PRODUCTS.slice(0, 24));
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,12 @@
+<%- include('../partials/head') %>
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)">
+  <div style="text-align:center;padding:40px">
+    <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+    <div style="font-family:var(--font-head);font-size:22px;font-weight:800;margin-bottom:8px">Server Error</div>
+    <% if (locals.message) { %>
+      <div class="text-dim" style="max-width:400px;margin:0 auto"><%= message %></div>
+    <% } %>
+    <a href="/dashboard" class="btn btn-accent" style="margin-top:20px;display:inline-flex">← Go to Dashboard</a>
+  </div>
+</div>
+<%- include('../partials/footer') %>

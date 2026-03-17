@@ -1,0 +1,130 @@
+<%- include('../partials/head') %>
+<div class="layout">
+  <%- include('../partials/sidebar') %>
+  <div class="main">
+    <%- include('../partials/topbar') %>
+    <div class="content">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Expenses</div>
+          <div class="page-sub">Month total: <span style="color:var(--red)">₹<%= total.toLocaleString('en-IN',{maximumFractionDigits:2}) %></span></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <form method="GET" style="display:flex;gap:8px;align-items:center">
+            <input class="form-input" type="month" name="month" value="<%= month %>" style="max-width:160px" onchange="this.form.submit()" />
+          </form>
+          <button class="btn btn-accent" onclick="openModal('add-exp-modal')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Expense
+          </button>
+        </div>
+      </div>
+
+      <% if (byCategory.length > 0) { %>
+      <div class="grid-2 mb-16">
+        <div class="card">
+          <div class="card-title">By Category</div>
+          <div class="chart-wrap" style="height:200px"><canvas id="chart-exp"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Breakdown</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <% byCategory.forEach(b => { %>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg3);border-radius:8px">
+              <span class="text-muted"><%= b.cat %></span>
+              <span class="fw-bold" style="color:var(--red)">₹<%= b.total.toFixed(2) %></span>
+            </div>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <% if (!expenses.length) { %>
+          <div class="empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            <p>No expenses this month</p>
+          </div>
+        <% } else { %>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Mode</th><th></th></tr></thead>
+              <tbody>
+                <% expenses.forEach(e => { %>
+                <tr>
+                  <td class="text-dim"><%= new Date(e.expense_date).toLocaleDateString('en-IN') %></td>
+                  <td><span class="badge badge--orange"><%= e.category %></span></td>
+                  <td class="text-dim"><%= e.description || '—' %></td>
+                  <td class="fw-bold text-red">₹<%= parseFloat(e.amount).toFixed(2) %></td>
+                  <td><span class="badge badge--gray"><%= (e.payment_mode||'cash').toUpperCase() %></span></td>
+                  <td>
+                    <form action="/expenses/<%= e.id %>?_method=DELETE" method="POST" style="display:inline" onsubmit="return confirm('Delete this expense?')">
+                      <button type="submit" class="btn btn-sm btn-danger">🗑</button>
+                    </form>
+                  </td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Expense Modal -->
+<div class="modal-overlay" id="add-exp-modal" style="display:none" onclick="if(event.target===this)closeModal('add-exp-modal')">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header"><span class="modal-title">Add Expense</span><button type="button" class="btn btn-sm btn-ghost" onclick="closeModal('add-exp-modal')">✕</button></div>
+    <form action="/expenses" method="POST">
+      <div class="modal-body">
+        <div class="form-row-2">
+          <div class="form-group"><label class="form-label">Category *</label>
+            <select class="form-select" name="category" required>
+              <% categories.forEach(c => { %><option value="<%= c %>"><%= c %></option><% }) %>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Amount (₹) *</label><input class="form-input" name="amount" type="number" min="0.01" step="0.01" required placeholder="500" /></div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group"><label class="form-label">Date</label><input class="form-input" name="expense_date" type="date" value="<%= new Date().toISOString().split('T')[0] %>" /></div>
+          <div class="form-group"><label class="form-label">Payment Mode</label>
+            <select class="form-select" name="payment_mode">
+              <option value="cash">Cash</option><option value="upi">UPI</option><option value="card">Card</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Description</label><input class="form-input" name="description" placeholder="Optional details..." /></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('add-exp-modal')">Cancel</button>
+        <button type="submit" class="btn btn-accent">Add Expense</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openModal(id)  { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+<% if (byCategory.length > 0) { %>
+document.addEventListener('DOMContentLoaded', () => {
+  new Chart(document.getElementById('chart-exp'), {
+    type: 'doughnut',
+    data: {
+      labels: <%- catLabels %>,
+      datasets: [{ data: <%- catData %>, backgroundColor: ['#f97316','#ef4444','#eab308','#22c55e','#3b82f6','#a855f7','#ec4899','#14b8a6'], borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } } },
+      cutout: '55%'
+    }
+  });
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

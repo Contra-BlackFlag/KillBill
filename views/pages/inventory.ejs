@@ -1,0 +1,220 @@
+<%- include('../partials/head') %>
+<div class="layout">
+  <%- include('../partials/sidebar') %>
+  <div class="main">
+    <%- include('../partials/topbar') %>
+    <div class="content">
+
+      <div class="page-header">
+        <div>
+          <div class="page-title">Inventory</div>
+          <div class="page-sub"><%= products.length %> products</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="form-input" id="inv-search" placeholder="Search..." oninput="filterTable(this.value)" style="max-width:220px" />
+          <button class="btn btn-accent" onclick="openModal('add-modal')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Product
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <% if (!products.length) { %>
+          <div class="empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <p>No products yet</p>
+            <small>Click "Add Product" to get started</small>
+          </div>
+        <% } else { %>
+        <div class="table-wrap">
+          <table class="data-table" id="inv-table">
+            <thead>
+              <tr><th>Product</th><th>Category</th><th>Purchase</th><th>Selling</th><th>Margin</th><th>Stock</th><th>GST</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              <% products.forEach(p => {
+                const margin = p.purchase_price > 0
+                  ? ((p.selling_price - p.purchase_price) / p.purchase_price * 100).toFixed(1)
+                  : '0';
+              %>
+              <tr data-name="<%= p.name.toLowerCase() %>" data-cat="<%= (p.category||'').toLowerCase() %>">
+                <td>
+                  <div class="fw-bold"><%= p.name %></div>
+                  <div class="text-dim text-xs"><%= p.unit || 'pcs' %><% if (p.barcode) { %> · <%= p.barcode %><% } %></div>
+                </td>
+                <td><span class="badge badge--gray"><%= p.category || '—' %></span></td>
+                <td>₹<%= parseFloat(p.purchase_price).toFixed(2) %></td>
+                <td class="fw-bold">₹<%= parseFloat(p.selling_price).toFixed(2) %></td>
+                <td><span class="badge badge--<%= parseFloat(margin) > 0 ? 'green' : 'red' %>"><%= margin %>%</span></td>
+                <td>
+                  <span class="badge badge--<%= p.quantity <= 0 ? 'red' : p.quantity <= p.low_stock_alert ? 'yellow' : 'green' %>">
+                    <%= p.quantity %> <%= p.unit || 'pcs' %>
+                  </span>
+                </td>
+                <td class="text-dim"><%= p.gst_rate || 0 %>%</td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <button class="btn btn-sm btn-ghost" onclick="openEditModal(<%- JSON.stringify(p) %>)" title="Edit">✏️</button>
+                    <button class="btn btn-sm btn-ghost" onclick="openRestockModal('<%= p.id %>','<%= p.name %>',<%= p.quantity %>,<%= p.purchase_price %>,'<%= p.unit || 'pcs' %>')" title="Restock">📦</button>
+                    <form action="/inventory/<%= p.id %>?_method=DELETE" method="POST" style="display:inline" onsubmit="return confirm('Delete <%= p.name %>?')">
+                      <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ADD Modal -->
+<div class="modal-overlay" id="add-modal" style="display:none" onclick="if(event.target===this)closeModal('add-modal')">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Add Product</span><button type="button" class="btn btn-sm btn-ghost" onclick="closeModal('add-modal')">✕</button></div>
+    <form action="/inventory" method="POST">
+      <div class="modal-body">
+        <div class="form-row-2">
+          <div class="form-group"><label class="form-label">Name *</label><input class="form-input" name="name" required placeholder="Amul Butter" /></div>
+          <div class="form-group"><label class="form-label">Category</label><input class="form-input" name="category" placeholder="Dairy" /></div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group"><label class="form-label">Purchase Price (₹)</label><input class="form-input" name="purchase_price" type="number" min="0" step="0.01" value="0" /></div>
+          <div class="form-group"><label class="form-label">Selling Price (₹) *</label><input class="form-input" name="selling_price" type="number" min="0" step="0.01" value="0" /></div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group"><label class="form-label">Opening Stock</label><input class="form-input" name="quantity" type="number" min="0" value="0" /></div>
+          <div class="form-group"><label class="form-label">Low Stock Alert</label><input class="form-input" name="low_stock_alert" type="number" min="0" value="5" /></div>
+          <div class="form-group"><label class="form-label">Unit</label>
+            <select class="form-select" name="unit">
+              <% ['pcs','kg','g','litre','ml','dozen','pack','box','bottle'].forEach(u => { %>
+                <option value="<%= u %>"><%= u %></option>
+              <% }) %>
+            </select>
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group"><label class="form-label">Barcode</label><input class="form-input" name="barcode" placeholder="Optional" /></div>
+          <div class="form-group"><label class="form-label">GST Rate</label>
+            <select class="form-select" name="gst_rate">
+              <% [0,5,12,18,28].forEach(g => { %>
+                <option value="<%= g %>"><%= g %>%</option>
+              <% }) %>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('add-modal')">Cancel</button>
+        <button type="submit" class="btn btn-accent">Add Product</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- EDIT Modal -->
+<div class="modal-overlay" id="edit-modal" style="display:none" onclick="if(event.target===this)closeModal('edit-modal')">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Edit Product</span><button type="button" class="btn btn-sm btn-ghost" onclick="closeModal('edit-modal')">✕</button></div>
+    <form id="edit-form" method="POST">
+      <input type="hidden" name="_method" value="PUT" />
+      <div class="modal-body">
+        <div class="form-row-2">
+          <div class="form-group"><label class="form-label">Name *</label><input class="form-input" name="name" id="e-name" required /></div>
+          <div class="form-group"><label class="form-label">Category</label><input class="form-input" name="category" id="e-cat" /></div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group"><label class="form-label">Purchase Price (₹)</label><input class="form-input" name="purchase_price" id="e-pp" type="number" min="0" step="0.01" /></div>
+          <div class="form-group"><label class="form-label">Selling Price (₹)</label><input class="form-input" name="selling_price" id="e-sp" type="number" min="0" step="0.01" /></div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group"><label class="form-label">Stock</label><input class="form-input" name="quantity" id="e-qty" type="number" min="0" /></div>
+          <div class="form-group"><label class="form-label">Alert At</label><input class="form-input" name="low_stock_alert" id="e-alert" type="number" min="0" /></div>
+          <div class="form-group"><label class="form-label">Unit</label>
+            <select class="form-select" name="unit" id="e-unit">
+              <% ['pcs','kg','g','litre','ml','dozen','pack','box','bottle'].forEach(u => { %>
+                <option value="<%= u %>"><%= u %></option>
+              <% }) %>
+            </select>
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group"><label class="form-label">Barcode</label><input class="form-input" name="barcode" id="e-barcode" /></div>
+          <div class="form-group"><label class="form-label">GST Rate</label>
+            <select class="form-select" name="gst_rate" id="e-gst">
+              <% [0,5,12,18,28].forEach(g => { %>
+                <option value="<%= g %>"><%= g %>%</option>
+              <% }) %>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('edit-modal')">Cancel</button>
+        <button type="submit" class="btn btn-accent">Update</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- RESTOCK Modal -->
+<div class="modal-overlay" id="restock-modal" style="display:none" onclick="if(event.target===this)closeModal('restock-modal')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header"><span class="modal-title" id="restock-title">Restock Product</span><button type="button" class="btn btn-sm btn-ghost" onclick="closeModal('restock-modal')">✕</button></div>
+    <form id="restock-form" method="POST">
+      <div class="modal-body">
+        <div id="restock-info" style="padding:14px;background:var(--bg3);border-radius:var(--radius);margin-bottom:14px;font-size:13px"></div>
+        <div class="form-row-2">
+          <div class="form-group"><label class="form-label">Add Quantity *</label><input class="form-input" name="qty" type="number" min="1" value="10" required /></div>
+          <div class="form-group"><label class="form-label">New Purchase Price (₹)</label><input class="form-input" name="purchase_price" id="restock-pp" type="number" min="0" step="0.01" /></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('restock-modal')">Cancel</button>
+        <button type="submit" class="btn btn-green">📦 Restock</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function filterTable(q) {
+  const lower = q.toLowerCase();
+  document.querySelectorAll('#inv-table tbody tr').forEach(row => {
+    row.style.display = (row.dataset.name.includes(lower) || row.dataset.cat.includes(lower)) ? '' : 'none';
+  });
+}
+
+function openEditModal(p) {
+  document.getElementById('edit-form').action = `/inventory/${p.id}`;
+  document.getElementById('e-name').value    = p.name;
+  document.getElementById('e-cat').value     = p.category || '';
+  document.getElementById('e-pp').value      = p.purchase_price;
+  document.getElementById('e-sp').value      = p.selling_price;
+  document.getElementById('e-qty').value     = p.quantity;
+  document.getElementById('e-alert').value   = p.low_stock_alert;
+  document.getElementById('e-barcode').value = p.barcode || '';
+  document.getElementById('e-unit').value    = p.unit || 'pcs';
+  document.getElementById('e-gst').value     = p.gst_rate || 0;
+  openModal('edit-modal');
+}
+
+function openRestockModal(id, name, qty, pp, unit) {
+  document.getElementById('restock-form').action = `/inventory/${id}/restock`;
+  document.getElementById('restock-title').textContent = 'Restock: ' + name;
+  document.getElementById('restock-info').innerHTML =
+    `<div style="display:flex;justify-content:space-between"><span style="color:var(--text2)">Current Stock</span><strong>${qty} ${unit}</strong></div>`;
+  document.getElementById('restock-pp').value = pp;
+  openModal('restock-modal');
+}
+
+function openModal(id)  { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+</script>
+<%- include('../partials/footer') %>
