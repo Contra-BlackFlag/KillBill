@@ -1,0 +1,14 @@
+  <script src="/js/app.js"></script>
+  <script>
+    // Init Lucide icons after DOM ready
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) lucide.createIcons();
+      // Auto-dismiss flash after 4s
+      document.querySelectorAll('.flash').forEach(el => {
+        setTimeout(() => el.style.opacity = '0', 3800);
+        setTimeout(() => el.remove(), 4200);
+      });
+    });
+  </script>
+</body>
+</html>

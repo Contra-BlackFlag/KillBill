@@ -1,0 +1,108 @@
+<%- include('../partials/head') %>
+<div class="layout">
+  <%- include('../partials/sidebar') %>
+  <div class="main">
+    <%- include('../partials/topbar') %>
+    <div class="content">
+      <div class="page-header">
+        <div><div class="page-title">Reports & Analytics</div></div>
+        <form method="GET" style="display:flex;gap:8px;align-items:center">
+          <input class="form-input" type="month" name="month" value="<%= month %>" style="max-width:160px" onchange="this.form.submit()" />
+        </form>
+      </div>
+
+      <div class="stat-grid" style="margin-bottom:20px">
+        <div class="stat-card">
+          <div class="stat-icon stat-icon--orange"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg></div>
+          <div class="stat-label">Total Sales</div>
+          <div class="stat-value stat-value--orange">₹<%= totalSales.toLocaleString('en-IN',{maximumFractionDigits:2}) %></div>
+          <div class="stat-sub"><%= billCount %> bills</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon stat-icon--red"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+          <div class="stat-label">Total Expenses</div>
+          <div class="stat-value stat-value--red">₹<%= totalExp.toLocaleString('en-IN',{maximumFractionDigits:2}) %></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon stat-icon--green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <div class="stat-label">Net Profit</div>
+          <div class="stat-value stat-value--green">₹<%= netProfit.toLocaleString('en-IN',{maximumFractionDigits:2}) %></div>
+          <div class="stat-sub"><%= margin %>% margin</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(168,85,247,.12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></div>
+          <div class="stat-label">GST Collected</div>
+          <div class="stat-value" style="color:#a855f7">₹<%= totalGST.toLocaleString('en-IN',{maximumFractionDigits:2}) %></div>
+        </div>
+      </div>
+
+      <div class="grid-2 mb-16">
+        <div class="card">
+          <div class="card-title">Daily Sales</div>
+          <div class="chart-wrap" style="height:250px"><canvas id="chart-daily"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Expense by Category</div>
+          <div class="chart-wrap" style="height:250px"><canvas id="chart-exp-cat"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Payment Mode Breakdown</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
+          <% const modeLabels = JSON.parse(modesLabels); const modeData = JSON.parse(modesData); %>
+          <% modeLabels.forEach((label, i) => { %>
+          <div style="padding:16px;background:var(--bg3);border-radius:var(--radius);text-align:center">
+            <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:8px"><%= label %></div>
+            <div style="font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--accent)">₹<%= parseFloat(modeData[i]).toLocaleString('en-IN',{maximumFractionDigits:0}) %></div>
+            <div class="text-xs text-dim" style="margin-top:4px"><%= totalSales > 0 ? (modeData[i]/totalSales*100).toFixed(1) : '0' %>%</div>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  new Chart(document.getElementById('chart-daily'), {
+    type: 'line',
+    data: {
+      labels: <%- dailyLabels %>,
+      datasets: [{
+        data: <%- dailyData %>,
+        fill: true,
+        backgroundColor: 'rgba(249,115,22,.08)',
+        borderColor: '#f97316', borderWidth: 2,
+        pointRadius: 3, pointBackgroundColor: '#f97316', tension: .4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#64748b', font: { size: 10 }, callback: v => '₹'+v.toLocaleString('en-IN') } }
+      }
+    }
+  });
+
+  const expLabels = <%- expCatLabels %>;
+  const expData   = <%- expCatData %>;
+  new Chart(document.getElementById('chart-exp-cat'), {
+    type: 'doughnut',
+    data: {
+      labels: expLabels.length ? expLabels : ['No Expenses'],
+      datasets: [{ data: expData.length ? expData : [1], backgroundColor: expData.length ? ['#f97316','#ef4444','#eab308','#22c55e','#3b82f6','#a855f7','#ec4899','#14b8a6'] : ['#1e2a3a'], borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } } },
+      cutout: '55%'
+    }
+  });
+});
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,81 @@
+<%- include('../partials/head') %>
+<div class="layout">
+  <%- include('../partials/sidebar') %>
+  <div class="main">
+    <%- include('../partials/topbar') %>
+    <div class="content">
+      <div class="page-header">
+        <div>
+          <a href="/inventory" style="font-size:12px;color:var(--text3)">← Back to Inventory</a>
+          <div class="page-title">Edit Product</div>
+        </div>
+      </div>
+
+      <div class="card" style="max-width:640px">
+        <form action="/inventory/<%= product.id %>?_method=PUT" method="POST">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Product Name *</label>
+              <input class="form-input" name="name" value="<%= product.name %>" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <input class="form-input" name="category" value="<%= product.category || '' %>" />
+            </div>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Purchase Price (₹)</label>
+              <input class="form-input" name="purchase_price" type="number" min="0" step="0.01" value="<%= product.purchase_price %>" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Selling Price (₹) *</label>
+              <input class="form-input" name="selling_price" type="number" min="0" step="0.01" value="<%= product.selling_price %>" required />
+            </div>
+          </div>
+          <div class="form-row-3">
+            <div class="form-group">
+              <label class="form-label">Stock Quantity</label>
+              <input class="form-input" name="quantity" type="number" min="0" value="<%= product.quantity %>" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Low Stock Alert</label>
+              <input class="form-input" name="low_stock_alert" type="number" min="0" value="<%= product.low_stock_alert %>" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Unit</label>
+              <select class="form-select" name="unit">
+                <% ['pcs','kg','g','litre','ml','dozen','pack','box','bottle'].forEach(u => { %>
+                  <option value="<%= u %>" <%= product.unit === u ? 'selected' : '' %>><%= u %></option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Barcode</label>
+              <input class="form-input" name="barcode" value="<%= product.barcode || '' %>" placeholder="Optional" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">GST Rate</label>
+              <select class="form-select" name="gst_rate">
+                <% [0,5,12,18,28].forEach(g => { %>
+                  <option value="<%= g %>" <%= parseFloat(product.gst_rate) === g ? 'selected' : '' %>><%= g %>%</option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:4px">
+            <a href="/inventory" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-accent">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

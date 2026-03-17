@@ -1,0 +1,60 @@
+<%- include('../partials/head') %>
+<div class="layout">
+  <%- include('../partials/sidebar') %>
+  <div class="main">
+    <%- include('../partials/topbar') %>
+    <div class="content">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Bill History</div>
+          <div class="page-sub"><%= bills.length %> bills shown</div>
+        </div>
+        <a href="/billing" class="btn btn-accent">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Bill
+        </a>
+      </div>
+
+      <div class="card">
+        <% if (!bills.length) { %>
+          <div class="empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <p>No bills yet</p>
+          </div>
+        <% } else { %>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>Bill #</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th>Mode</th><th>Status</th><th></th></tr>
+              </thead>
+              <tbody>
+                <% bills.forEach(b => { %>
+                <tr>
+                  <td class="fw-bold"><%= b.bill_number %></td>
+                  <td class="text-dim"><%= new Date(b.created_at).toLocaleDateString('en-IN') %></td>
+                  <td><%= b.customer_name || 'Walk-in' %></td>
+                  <td class="text-dim"><%= b.bill_items?.length || 0 %> items</td>
+                  <td class="fw-bold" style="color:var(--accent)">₹<%= parseFloat(b.total).toLocaleString('en-IN', {maximumFractionDigits:2}) %></td>
+                  <td><span class="badge badge--gray"><%= b.payment_mode.toUpperCase() %></span></td>
+                  <td><span class="badge badge--<%= b.payment_status === 'paid' ? 'green' : 'red' %>"><%= b.payment_status %></span></td>
+                  <td><a href="/billing/<%= b.id %>" class="btn btn-sm btn-ghost">View</a></td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination -->
+          <% if (totalPages > 1) { %>
+          <div style="display:flex;justify-content:center;gap:8px;margin-top:16px">
+            <% for (let i = 1; i <= totalPages; i++) { %>
+              <a href="?page=<%= i %>" class="btn btn-sm <%= i === page ? 'btn-accent' : 'btn-ghost' %>"><%= i %></a>
+            <% } %>
+          </div>
+          <% } %>
+        <% } %>
+      </div>
+
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

@@ -1,0 +1,113 @@
+<%- include('../partials/head') %>
+<div class="layout">
+  <%- include('../partials/sidebar') %>
+  <div class="main">
+    <%- include('../partials/topbar') %>
+    <div class="content">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Customers</div>
+          <div class="page-sub"><%= customers.length %> registered</div>
+        </div>
+        <button class="btn btn-accent" onclick="openModal('add-cust-modal')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Customer
+        </button>
+      </div>
+
+      <div class="card">
+        <% if (!customers.length) { %>
+          <div class="empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <p>No customers yet</p>
+          </div>
+        <% } else { %>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Phone</th><th>Address</th><th>Total Credit Due</th><th>Actions</th></tr></thead>
+            <tbody>
+              <% customers.forEach(c => { %>
+              <tr>
+                <td class="fw-bold"><a href="/customers/<%= c.id %>" style="color:inherit;text-decoration:underline;text-decoration-color:var(--border)"><%= c.name %></a></td>
+                <td class="text-dim"><%= c.phone || '—' %></td>
+                <td class="text-dim"><%= c.address || '—' %></td>
+                <td>
+                  <% if (parseFloat(c.total_credit) > 0) { %>
+                    <span class="badge badge--red">₹<%= parseFloat(c.total_credit).toFixed(2) %></span>
+                  <% } else { %>
+                    <span class="badge badge--green">₹0</span>
+                  <% } %>
+                </td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <a href="/customers/<%= c.id %>" class="btn btn-sm btn-ghost">History</a>
+                    <button class="btn btn-sm btn-ghost" onclick="openEditCust(<%- JSON.stringify(c) %>)">✏️</button>
+                    <form action="/customers/<%= c.id %>?_method=DELETE" method="POST" style="display:inline" onsubmit="return confirm('Delete <%= c.name %>?')">
+                      <button type="submit" class="btn btn-sm btn-danger">🗑</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD Modal -->
+<div class="modal-overlay" id="add-cust-modal" style="display:none" onclick="if(event.target===this)closeModal('add-cust-modal')">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header"><span class="modal-title">Add Customer</span><button type="button" class="btn btn-sm btn-ghost" onclick="closeModal('add-cust-modal')">✕</button></div>
+    <form action="/customers" method="POST">
+      <div class="modal-body">
+        <div class="form-row-2">
+          <div class="form-group"><label class="form-label">Name *</label><input class="form-input" name="name" required placeholder="Ramesh Patil" /></div>
+          <div class="form-group"><label class="form-label">Phone</label><input class="form-input" name="phone" placeholder="9876543210" /></div>
+        </div>
+        <div class="form-group"><label class="form-label">Address</label><textarea class="form-textarea" name="address" rows="2" placeholder="Full address..."></textarea></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('add-cust-modal')">Cancel</button>
+        <button type="submit" class="btn btn-accent">Add Customer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- EDIT Modal -->
+<div class="modal-overlay" id="edit-cust-modal" style="display:none" onclick="if(event.target===this)closeModal('edit-cust-modal')">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header"><span class="modal-title">Edit Customer</span><button type="button" class="btn btn-sm btn-ghost" onclick="closeModal('edit-cust-modal')">✕</button></div>
+    <form id="edit-cust-form" method="POST">
+      <input type="hidden" name="_method" value="PUT" />
+      <div class="modal-body">
+        <div class="form-row-2">
+          <div class="form-group"><label class="form-label">Name *</label><input class="form-input" name="name" id="ec-name" required /></div>
+          <div class="form-group"><label class="form-label">Phone</label><input class="form-input" name="phone" id="ec-phone" /></div>
+        </div>
+        <div class="form-group"><label class="form-label">Address</label><textarea class="form-textarea" name="address" id="ec-addr" rows="2"></textarea></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('edit-cust-modal')">Cancel</button>
+        <button type="submit" class="btn btn-accent">Update</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openModal(id)  { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function openEditCust(c) {
+  document.getElementById('edit-cust-form').action = `/customers/${c.id}`;
+  document.getElementById('ec-name').value  = c.name;
+  document.getElementById('ec-phone').value = c.phone || '';
+  document.getElementById('ec-addr').value  = c.address || '';
+  openModal('edit-cust-modal');
+}
+</script>
+<%- include('../partials/footer') %>
